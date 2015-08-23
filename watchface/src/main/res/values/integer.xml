@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <integer name="x_icon_int">-22</integer>
+    <integer name="x_icon_int_round">-2</integer>
+    <integer name="y_icon_int">42</integer>
+    <integer name="y_icon_int_round">62</integer>
+
+    <integer name="x_hour_int">76</integer>
+    <integer name="x_hour_int_round">68</integer>
+    <integer name="x_date_int">4</integer>
+    <integer name="x_date_int_round">4</integer>
+    <integer name="y_date_int">24</integer>
+    <integer name="y_date_int_round">24</integer>
+    <integer name="x_max_int">40</integer>
+    <integer name="x_max_int_round">40</integer>
+    <integer name="x_min_int">4</integer>
+    <integer name="x_min_int_round">4</integer>
+    <integer name="y_temp_int">56</integer>
+    <integer name="y_temp_int_round">54</integer>
+</resources>

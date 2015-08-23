@@ -101,6 +101,7 @@ public class SunshineFace extends CanvasWatchFaceService {
 
         float mXOffset;
         float mYOffset;
+        int mXIconInt, mYIconInt,mXHourInt,mXDateInt,mYDateInt, mXMaxInt, mXMinInt, mYTempInt;
 
         int mInteractiveBackgroundColor;
         int mInteractiveTriadColor;
@@ -233,20 +234,38 @@ public class SunshineFace extends CanvasWatchFaceService {
             // Load resources that have alternate values for round watches.
             Resources resources = SunshineFace.this.getResources();
             boolean isRound = insets.isRound();
-            mXOffset = resources.getDimension(isRound
-                    ? R.dimen.digital_x_offset_round : R.dimen.digital_x_offset);
-            mYOffset = resources.getDimension(isRound
-                    ? R.dimen.digital_y_offset_round : R.dimen.digital_y_offset);
             float timeTextSize,dateTextSize,tempTextSize;
             if(isRound) {
                 timeTextSize = resources.getDimension(R.dimen.digital_text_size_round);
                 dateTextSize = resources.getDimension(R.dimen.date_text_size_round);
                 tempTextSize = resources.getDimension(R.dimen.temp_text_size_round);
+
+                mXOffset = resources.getDimension(R.dimen.digital_x_offset_round);
+                mYOffset = resources.getDimension(R.dimen.digital_y_offset_round);
+                mXIconInt = resources.getInteger(R.integer.x_icon_int_round);
+                mYIconInt = resources.getInteger(R.integer.y_icon_int_round);
+                mXHourInt = resources.getInteger(R.integer.x_hour_int_round);
+                mXDateInt = resources.getInteger(R.integer.x_date_int_round);
+                mYDateInt = resources.getInteger(R.integer.y_date_int_round);
+                mXMaxInt = resources.getInteger(R.integer.x_max_int_round);
+                mXMinInt = resources.getInteger(R.integer.x_min_int_round);
+                mYTempInt = resources.getInteger(R.integer.y_temp_int_round);
             }
             else{
                 timeTextSize = resources.getDimension(R.dimen.digital_text_size);
                 dateTextSize = resources.getDimension(R.dimen.date_text_size);
                 tempTextSize = resources.getDimension(R.dimen.temp_text_size);
+
+                mXOffset = resources.getDimension(R.dimen.digital_x_offset);
+                mYOffset = resources.getDimension(R.dimen.digital_y_offset);
+                mXIconInt = resources.getInteger(R.integer.x_icon_int);
+                mYIconInt = resources.getInteger(R.integer.y_icon_int);
+                mXHourInt = resources.getInteger(R.integer.x_hour_int);
+                mXDateInt = resources.getInteger(R.integer.x_date_int);
+                mYDateInt = resources.getInteger(R.integer.y_date_int);
+                mXMaxInt = resources.getInteger(R.integer.x_max_int);
+                mXMinInt = resources.getInteger(R.integer.x_min_int);
+                mYTempInt = resources.getInteger(R.integer.y_temp_int);
             }
             mHourTextPaint.setTextSize(timeTextSize);
             mMinuteTextPaint.setTextSize(timeTextSize);
@@ -314,12 +333,8 @@ public class SunshineFace extends CanvasWatchFaceService {
             canvas.drawRect(0, 0, bounds.width(), bounds.height(), mBackgroundPaint);
 
             if (!isInAmbientMode()) {
-                //TODO:SQUARE
-//                canvas.drawBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.art_clear),
-//                        -22, 42, mIcon);
-                //TODO:CIRCLE
                 canvas.drawBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.art_light_rain),
-                        -2, 62, mIcon);
+                        mXIconInt, mYIconInt, mIcon);
             }
             canvas.drawPath(mTriadPath, mTriadBg);
 
@@ -329,21 +344,11 @@ public class SunshineFace extends CanvasWatchFaceService {
             String minute = String.format("%02d", mTime.minute);
             String date = new SimpleDateFormat("EEE, MMM dd yyyy").format(new Date()).toUpperCase();
 
-            //TODO:ROUND
-            canvas.drawText(hour, mXOffset-68, mYOffset, mHourTextPaint);
+            canvas.drawText(hour, mXOffset-mXHourInt, mYOffset, mHourTextPaint);
             canvas.drawText(minute, mXOffset, mYOffset, mMinuteTextPaint);
-            canvas.drawText(date, mXOffset-4, mYOffset+24, mDateTextPaint);
-            canvas.drawText("25\u00B0", mXOffset-40, mYOffset+ 54, mMaxTempTextPaint);
-            canvas.drawText("16\u00B0", mXOffset-4, mYOffset+54, mMinTempTextPaint);
-
-            //TODO:SQUARE
-//            canvas.drawText(hour, mXOffset-76, mYOffset, mHourTextPaint);
-//            canvas.drawText(minute, mXOffset, mYOffset, mMinuteTextPaint);
-//            canvas.drawText(date, mXOffset-4, mYOffset+24, mDateTextPaint);
-//            canvas.drawText("25\u00B0", mXOffset-40, mYOffset+ 56, mMaxTempTextPaint);
-//            canvas.drawText("16\u00B0", mXOffset-4, mYOffset+56, mMinTempTextPaint);
-
-
+            canvas.drawText(date, mXOffset-mXDateInt, mYOffset+mYDateInt, mDateTextPaint);
+            canvas.drawText("25\u00B0", mXOffset-mXMaxInt, mYOffset+mYTempInt, mMaxTempTextPaint);
+            canvas.drawText("16\u00B0", mXOffset-mXMinInt, mYOffset+mYTempInt, mMinTempTextPaint);
         }
         /**
          * Starts the {@link #mUpdateTimeHandler} timer if it should be running and isn't currently

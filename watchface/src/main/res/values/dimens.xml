@@ -9,7 +9,6 @@
 
     <dimen name="date_text_size">13sp</dimen>
     <dimen name="date_text_size_round">11sp</dimen>
-
     <dimen name="temp_text_size">16sp</dimen>
     <dimen name="temp_text_size_round">14sp</dimen>
 </resources>
