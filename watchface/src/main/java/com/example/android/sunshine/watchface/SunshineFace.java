@@ -21,8 +21,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Resources;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.os.Bundle;
@@ -87,6 +90,9 @@ public class SunshineFace extends CanvasWatchFaceService {
         Paint mDateTextPaint;
         Paint mMaxTempTextPaint;
         Paint mMinTempTextPaint;
+        Paint mIcon;
+        Paint mTriadBg;
+        Path mTriadPath;
 
         boolean mAmbient;
 
@@ -123,13 +129,32 @@ public class SunshineFace extends CanvasWatchFaceService {
             mMinuteTextPaint = createTextPaint(resources.getColor(R.color.digital_text),LIGHT_TYPEFACE);
 
             mDateTextPaint = new Paint();
-            mDateTextPaint = createTextPaint(resources.getColor(R.color.digital_text),TYPEFACE);
+            mDateTextPaint = createTextPaint(resources.getColor(R.color.primary_light),MEDIUM_TYPEFACE);
 
             mMaxTempTextPaint = new Paint();
             mMaxTempTextPaint = createTextPaint(resources.getColor(R.color.digital_text),MEDIUM_TYPEFACE);
 
             mMinTempTextPaint = new Paint();
             mMinTempTextPaint = createTextPaint(resources.getColor(R.color.digital_text),LIGHT_TYPEFACE);
+
+            mIcon = new Paint();
+            mIcon.setAntiAlias(true);
+
+            mTriadBg = new Paint();
+            mTriadBg.setColor(getResources().getColor(R.color.primary));
+            mTriadBg.setStyle(Paint.Style.FILL);
+            mTriadBg.setAntiAlias(true);
+            Point a = new Point(0, 0);
+            Point c = new Point(400, 0);
+            Point b = new Point(400, 400);
+
+            mTriadPath = new Path();
+            mTriadPath.setFillType(Path.FillType.EVEN_ODD);
+            mTriadPath.lineTo(b.x, b.y);
+            mTriadPath.lineTo(c.x, c.y);
+            mTriadPath.lineTo(a.x, a.y);
+            mTriadPath.close();
+            mTriadPath.offset(-75, -50);
 
             mTime = new Time();
         }
@@ -246,6 +271,9 @@ public class SunshineFace extends CanvasWatchFaceService {
         public void onDraw(Canvas canvas, Rect bounds) {
             // Draw the background.
             canvas.drawRect(0, 0, bounds.width(), bounds.height(), mBackgroundPaint);
+            canvas.drawBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.art_storm),
+                    -22,42, mIcon);
+            canvas.drawPath(mTriadPath, mTriadBg);
 
             // Draw H:MM in ambient mode or H:MM:SS in interactive mode.
             mTime.setToNow();
@@ -259,11 +287,9 @@ public class SunshineFace extends CanvasWatchFaceService {
             canvas.drawText(hour, mXOffset-76, mYOffset, mHourTextPaint);
             canvas.drawText(minute, mXOffset, mYOffset, mMinuteTextPaint);
             canvas.drawText(date, mXOffset-4, mYOffset+24, mDateTextPaint);
-            canvas.drawText("25\u00B0", mXOffset-40, mYOffset+56, mMaxTempTextPaint);
+            canvas.drawText("25\u00B0", mXOffset-40, mYOffset+ 56, mMaxTempTextPaint);
             canvas.drawText("16\u00B0", mXOffset-4, mYOffset+56, mMinTempTextPaint);
-
         }
-
         /**
          * Starts the {@link #mUpdateTimeHandler} timer if it should be running and isn't currently
          * or stops it if it shouldn't be running but currently is.
