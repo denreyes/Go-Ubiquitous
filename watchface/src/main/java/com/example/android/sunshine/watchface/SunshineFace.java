@@ -35,6 +35,8 @@ import android.view.SurfaceHolder;
 import android.view.WindowInsets;
 
 import java.lang.ref.WeakReference;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
@@ -43,8 +45,12 @@ import java.util.concurrent.TimeUnit;
  * low-bit ambient mode, the text is drawn without anti-aliasing in ambient mode.
  */
 public class SunshineFace extends CanvasWatchFaceService {
-    private static final Typeface NORMAL_TYPEFACE =
-            Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL);
+    private static final Typeface TYPEFACE =
+            Typeface.create("sans-serif", Typeface.NORMAL);
+    private static final Typeface MEDIUM_TYPEFACE =
+            Typeface.create("sans-serif-medium", Typeface.NORMAL);
+    private static final Typeface LIGHT_TYPEFACE =
+            Typeface.create("sans-serif-light", Typeface.NORMAL);
 
     /**
      * Update rate in milliseconds for interactive mode. We update once a second since seconds are
@@ -76,7 +82,11 @@ public class SunshineFace extends CanvasWatchFaceService {
         boolean mRegisteredTimeZoneReceiver = false;
 
         Paint mBackgroundPaint;
-        Paint mTextPaint;
+        Paint mHourTextPaint;
+        Paint mMinuteTextPaint;
+        Paint mDateTextPaint;
+        Paint mMaxTempTextPaint;
+        Paint mMinTempTextPaint;
 
         boolean mAmbient;
 
@@ -106,8 +116,20 @@ public class SunshineFace extends CanvasWatchFaceService {
             mBackgroundPaint = new Paint();
             mBackgroundPaint.setColor(resources.getColor(R.color.digital_background));
 
-            mTextPaint = new Paint();
-            mTextPaint = createTextPaint(resources.getColor(R.color.digital_text));
+            mHourTextPaint = new Paint();
+            mHourTextPaint = createTextPaint(resources.getColor(R.color.digital_text), MEDIUM_TYPEFACE);
+
+            mMinuteTextPaint = new Paint();
+            mMinuteTextPaint = createTextPaint(resources.getColor(R.color.digital_text),LIGHT_TYPEFACE);
+
+            mDateTextPaint = new Paint();
+            mDateTextPaint = createTextPaint(resources.getColor(R.color.digital_text),TYPEFACE);
+
+            mMaxTempTextPaint = new Paint();
+            mMaxTempTextPaint = createTextPaint(resources.getColor(R.color.digital_text),MEDIUM_TYPEFACE);
+
+            mMinTempTextPaint = new Paint();
+            mMinTempTextPaint = createTextPaint(resources.getColor(R.color.digital_text),LIGHT_TYPEFACE);
 
             mTime = new Time();
         }
@@ -118,11 +140,12 @@ public class SunshineFace extends CanvasWatchFaceService {
             super.onDestroy();
         }
 
-        private Paint createTextPaint(int textColor) {
+        private Paint createTextPaint(int textColor, Typeface typeface) {
             Paint paint = new Paint();
             paint.setColor(textColor);
-            paint.setTypeface(NORMAL_TYPEFACE);
+            paint.setTypeface(typeface);
             paint.setAntiAlias(true);
+            paint.setTextAlign(Paint.Align.RIGHT);
             return paint;
         }
 
@@ -171,10 +194,22 @@ public class SunshineFace extends CanvasWatchFaceService {
             boolean isRound = insets.isRound();
             mXOffset = resources.getDimension(isRound
                     ? R.dimen.digital_x_offset_round : R.dimen.digital_x_offset);
-            float textSize = resources.getDimension(isRound
-                    ? R.dimen.digital_text_size_round : R.dimen.digital_text_size);
-
-            mTextPaint.setTextSize(textSize);
+            float timeTextSize,dateTextSize,tempTextSize;
+            if(isRound) {
+                timeTextSize = resources.getDimension(R.dimen.digital_text_size_round);
+                dateTextSize = resources.getDimension(R.dimen.date_text_size_round);
+                tempTextSize = resources.getDimension(R.dimen.temp_text_size_round);
+            }
+            else{
+                timeTextSize = resources.getDimension(R.dimen.digital_text_size);
+                dateTextSize = resources.getDimension(R.dimen.date_text_size);
+                tempTextSize = resources.getDimension(R.dimen.temp_text_size);
+            }
+            mHourTextPaint.setTextSize(timeTextSize);
+            mMinuteTextPaint.setTextSize(timeTextSize);
+            mDateTextPaint.setTextSize(dateTextSize);
+            mMaxTempTextPaint.setTextSize(tempTextSize);
+            mMinTempTextPaint.setTextSize(tempTextSize);
         }
 
         @Override
@@ -195,7 +230,9 @@ public class SunshineFace extends CanvasWatchFaceService {
             if (mAmbient != inAmbientMode) {
                 mAmbient = inAmbientMode;
                 if (mLowBitAmbient) {
-                    mTextPaint.setAntiAlias(!inAmbientMode);
+                    mHourTextPaint.setAntiAlias(!inAmbientMode);
+                    mMinuteTextPaint.setAntiAlias(!inAmbientMode);
+                    mDateTextPaint.setAntiAlias(!inAmbientMode);
                 }
                 invalidate();
             }
@@ -212,10 +249,19 @@ public class SunshineFace extends CanvasWatchFaceService {
 
             // Draw H:MM in ambient mode or H:MM:SS in interactive mode.
             mTime.setToNow();
-            String text = mAmbient
-                    ? String.format("%d:%02d", mTime.hour, mTime.minute)
-                    : String.format("%d:%02d:%02d", mTime.hour, mTime.minute, mTime.second);
-            canvas.drawText(text, mXOffset, mYOffset, mTextPaint);
+//            String text = mAmbient
+//                    ? String.format("%d:%02d", mTime.hour, mTime.minute)
+//                    : String.format("%d:%02d:%02d", mTime.hour, mTime.minute, mTime.second);
+
+            String hour = String.format("%02d:", mTime.hour);
+            String minute = String.format("%02d", mTime.minute);
+            String date = new SimpleDateFormat("EEE, MMM dd yyyy").format(new Date()).toUpperCase();
+            canvas.drawText(hour, mXOffset-76, mYOffset, mHourTextPaint);
+            canvas.drawText(minute, mXOffset, mYOffset, mMinuteTextPaint);
+            canvas.drawText(date, mXOffset-4, mYOffset+24, mDateTextPaint);
+            canvas.drawText("25\u00B0", mXOffset-40, mYOffset+56, mMaxTempTextPaint);
+            canvas.drawText("16\u00B0", mXOffset-4, mYOffset+56, mMinTempTextPaint);
+
         }
 
         /**
