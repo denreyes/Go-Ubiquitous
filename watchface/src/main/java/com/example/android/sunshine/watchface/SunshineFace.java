@@ -34,6 +34,7 @@ import android.os.Message;
 import android.support.wearable.watchface.CanvasWatchFaceService;
 import android.support.wearable.watchface.WatchFaceStyle;
 import android.text.format.Time;
+import android.view.Gravity;
 import android.view.SurfaceHolder;
 import android.view.WindowInsets;
 
@@ -85,13 +86,13 @@ public class SunshineFace extends CanvasWatchFaceService {
         boolean mRegisteredTimeZoneReceiver = false;
 
         Paint mBackgroundPaint;
+        Paint mIcon;
+        Paint mTriadBg;
         Paint mHourTextPaint;
         Paint mMinuteTextPaint;
         Paint mDateTextPaint;
         Paint mMaxTempTextPaint;
         Paint mMinTempTextPaint;
-        Paint mIcon;
-        Paint mTriadBg;
         Path mTriadPath;
 
         boolean mAmbient;
@@ -100,6 +101,14 @@ public class SunshineFace extends CanvasWatchFaceService {
 
         float mXOffset;
         float mYOffset;
+
+        int mInteractiveBackgroundColor;
+        int mInteractiveTriadColor;
+        int mInteractiveHourTextColor;
+        int mInteractiveMinuteTextColor;
+        int mInteractiveDateTextColor;
+        int mInteractiveMaxTextColor;
+        int mInteractiveMinTextColor;
 
         /**
          * Whether the display supports fewer bits for each color in ambient mode. When true, we
@@ -114,34 +123,41 @@ public class SunshineFace extends CanvasWatchFaceService {
             setWatchFaceStyle(new WatchFaceStyle.Builder(SunshineFace.this)
                     .setCardPeekMode(WatchFaceStyle.PEEK_MODE_VARIABLE)
                     .setBackgroundVisibility(WatchFaceStyle.BACKGROUND_VISIBILITY_INTERRUPTIVE)
+                    .setHotwordIndicatorGravity(Gravity.TOP | Gravity.RIGHT)
                     .setShowSystemUiTime(false)
                     .build());
             Resources resources = SunshineFace.this.getResources();
-            mYOffset = resources.getDimension(R.dimen.digital_y_offset);
 
+            mInteractiveBackgroundColor = resources.getColor(R.color.digital_background);
+            mInteractiveTriadColor = resources.getColor(R.color.primary);
+            mInteractiveHourTextColor = resources.getColor(R.color.digital_text);
+            mInteractiveMinuteTextColor = resources.getColor(R.color.digital_text);
+            mInteractiveDateTextColor = resources.getColor(R.color.primary_light);
+            mInteractiveMaxTextColor = resources.getColor(R.color.digital_text);
+            mInteractiveMinTextColor = resources.getColor(R.color.primary_light);
             mBackgroundPaint = new Paint();
-            mBackgroundPaint.setColor(resources.getColor(R.color.digital_background));
+            mBackgroundPaint.setColor(mInteractiveBackgroundColor);
 
             mHourTextPaint = new Paint();
-            mHourTextPaint = createTextPaint(resources.getColor(R.color.digital_text), MEDIUM_TYPEFACE);
+            mHourTextPaint = createTextPaint(mInteractiveHourTextColor, MEDIUM_TYPEFACE);
 
             mMinuteTextPaint = new Paint();
-            mMinuteTextPaint = createTextPaint(resources.getColor(R.color.digital_text),LIGHT_TYPEFACE);
+            mMinuteTextPaint = createTextPaint(mInteractiveMinuteTextColor,LIGHT_TYPEFACE);
 
             mDateTextPaint = new Paint();
-            mDateTextPaint = createTextPaint(resources.getColor(R.color.primary_light),MEDIUM_TYPEFACE);
+            mDateTextPaint = createTextPaint(mInteractiveDateTextColor,MEDIUM_TYPEFACE);
 
             mMaxTempTextPaint = new Paint();
-            mMaxTempTextPaint = createTextPaint(resources.getColor(R.color.digital_text),MEDIUM_TYPEFACE);
+            mMaxTempTextPaint = createTextPaint(mInteractiveMaxTextColor,MEDIUM_TYPEFACE);
 
             mMinTempTextPaint = new Paint();
-            mMinTempTextPaint = createTextPaint(resources.getColor(R.color.digital_text),LIGHT_TYPEFACE);
+            mMinTempTextPaint = createTextPaint(mInteractiveMinTextColor,TYPEFACE);
 
             mIcon = new Paint();
             mIcon.setAntiAlias(true);
 
             mTriadBg = new Paint();
-            mTriadBg.setColor(getResources().getColor(R.color.primary));
+            mTriadBg.setColor(mInteractiveTriadColor);
             mTriadBg.setStyle(Paint.Style.FILL);
             mTriadBg.setAntiAlias(true);
             Point a = new Point(0, 0);
@@ -219,6 +235,8 @@ public class SunshineFace extends CanvasWatchFaceService {
             boolean isRound = insets.isRound();
             mXOffset = resources.getDimension(isRound
                     ? R.dimen.digital_x_offset_round : R.dimen.digital_x_offset);
+            mYOffset = resources.getDimension(isRound
+                    ? R.dimen.digital_y_offset_round : R.dimen.digital_y_offset);
             float timeTextSize,dateTextSize,tempTextSize;
             if(isRound) {
                 timeTextSize = resources.getDimension(R.dimen.digital_text_size_round);
@@ -252,43 +270,80 @@ public class SunshineFace extends CanvasWatchFaceService {
         @Override
         public void onAmbientModeChanged(boolean inAmbientMode) {
             super.onAmbientModeChanged(inAmbientMode);
-            if (mAmbient != inAmbientMode) {
-                mAmbient = inAmbientMode;
-                if (mLowBitAmbient) {
-                    mHourTextPaint.setAntiAlias(!inAmbientMode);
-                    mMinuteTextPaint.setAntiAlias(!inAmbientMode);
-                    mDateTextPaint.setAntiAlias(!inAmbientMode);
-                }
-                invalidate();
-            }
 
-            // Whether the timer should be running depends on whether we're visible (as well as
-            // whether we're in ambient mode), so we may need to start or stop the timer.
+            adjustPaintColorToCurrentMode(mBackgroundPaint, mInteractiveBackgroundColor,
+                    SunshineFaceUtil.COLOR_VALUE_AMBIENT_BACKGROUND);
+            adjustPaintColorToCurrentMode(mTriadBg, mInteractiveTriadColor,
+                    SunshineFaceUtil.COLOR_VALUE_AMBIENT_TRIAD);
+            adjustPaintColorToCurrentMode(mHourTextPaint, mInteractiveHourTextColor,
+                    SunshineFaceUtil.COLOR_VALUE_AMBIENT_HOUR_TEXT);
+            adjustPaintColorToCurrentMode(mMinuteTextPaint, mInteractiveMinuteTextColor,
+                    SunshineFaceUtil.COLOR_VALUE_AMBIENT_MINUTE_TEXT);
+            adjustPaintColorToCurrentMode(mDateTextPaint, mInteractiveDateTextColor,
+                    SunshineFaceUtil.COLOR_VALUE_AMBIENT_DATE_TEXT);
+            adjustPaintColorToCurrentMode(mMaxTempTextPaint, mInteractiveMaxTextColor,
+                    SunshineFaceUtil.COLOR_VALUE_AMBIENT_MAX_TEXT);
+            adjustPaintColorToCurrentMode(mMinTempTextPaint, mInteractiveMinTextColor,
+                    SunshineFaceUtil.COLOR_VALUE_AMBIENT_MIN_TEXT);
+
+            if (mLowBitAmbient) {
+                boolean antiAlias = !inAmbientMode;
+                mTriadBg.setAntiAlias(antiAlias);
+                mIcon.setAntiAlias(antiAlias);
+                mHourTextPaint.setAntiAlias(antiAlias);
+                mMinuteTextPaint.setAntiAlias(antiAlias);
+                mDateTextPaint.setAntiAlias(antiAlias);
+                mMaxTempTextPaint.setAntiAlias(antiAlias);
+                mMinTempTextPaint.setAntiAlias(antiAlias);
+            }
+            invalidate();
+
+            // Whether the timer should be running depends on whether we're in ambient mode (as well
+            // as whether we're visible), so we may need to start or stop the timer.
             updateTimer();
+        }
+
+        private void adjustPaintColorToCurrentMode(Paint paint, int interactiveColor,
+                                                   int ambientColor) {
+            paint.setColor(isInAmbientMode() ? ambientColor : interactiveColor);
         }
 
         @Override
         public void onDraw(Canvas canvas, Rect bounds) {
             // Draw the background.
             canvas.drawRect(0, 0, bounds.width(), bounds.height(), mBackgroundPaint);
-            canvas.drawBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.art_storm),
-                    -22,42, mIcon);
+
+            if (!isInAmbientMode()) {
+                //TODO:SQUARE
+//                canvas.drawBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.art_clear),
+//                        -22, 42, mIcon);
+                //TODO:CIRCLE
+                canvas.drawBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.art_light_rain),
+                        -2, 62, mIcon);
+            }
             canvas.drawPath(mTriadPath, mTriadBg);
 
-            // Draw H:MM in ambient mode or H:MM:SS in interactive mode.
             mTime.setToNow();
-//            String text = mAmbient
-//                    ? String.format("%d:%02d", mTime.hour, mTime.minute)
-//                    : String.format("%d:%02d:%02d", mTime.hour, mTime.minute, mTime.second);
 
             String hour = String.format("%02d:", mTime.hour);
             String minute = String.format("%02d", mTime.minute);
             String date = new SimpleDateFormat("EEE, MMM dd yyyy").format(new Date()).toUpperCase();
-            canvas.drawText(hour, mXOffset-76, mYOffset, mHourTextPaint);
+
+            //TODO:ROUND
+            canvas.drawText(hour, mXOffset-68, mYOffset, mHourTextPaint);
             canvas.drawText(minute, mXOffset, mYOffset, mMinuteTextPaint);
             canvas.drawText(date, mXOffset-4, mYOffset+24, mDateTextPaint);
-            canvas.drawText("25\u00B0", mXOffset-40, mYOffset+ 56, mMaxTempTextPaint);
-            canvas.drawText("16\u00B0", mXOffset-4, mYOffset+56, mMinTempTextPaint);
+            canvas.drawText("25\u00B0", mXOffset-40, mYOffset+ 54, mMaxTempTextPaint);
+            canvas.drawText("16\u00B0", mXOffset-4, mYOffset+54, mMinTempTextPaint);
+
+            //TODO:SQUARE
+//            canvas.drawText(hour, mXOffset-76, mYOffset, mHourTextPaint);
+//            canvas.drawText(minute, mXOffset, mYOffset, mMinuteTextPaint);
+//            canvas.drawText(date, mXOffset-4, mYOffset+24, mDateTextPaint);
+//            canvas.drawText("25\u00B0", mXOffset-40, mYOffset+ 56, mMaxTempTextPaint);
+//            canvas.drawText("16\u00B0", mXOffset-4, mYOffset+56, mMinTempTextPaint);
+
+
         }
         /**
          * Starts the {@link #mUpdateTimeHandler} timer if it should be running and isn't currently
